@@ -11,8 +11,8 @@ CREATE DATABASE tournament;
 \c tournament
 
 -- Create tables
-CREATE TABLE player (
-	id integer,
+CREATE TABLE players (
+	id serial PRIMARY KEY,
 	name text,
 	wins integer,
 	losses integer);
