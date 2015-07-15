@@ -150,23 +150,8 @@ def swissPairings():
             match_list.append((p_one[0], p_one[1], p_two[0], p_two[1]))
 
         return match_list
-            
-
-
-
-
-    db = connect('tournament')
-    c = db.cursor()
-    current_standings_sql = ('SELECT games_won.id, games_won.name, '
-                         'games_won.wins, games_lost.losses ' 
-                         'FROM games_won JOIN games_lost '
-                         'ON games_won.id = games_lost.id '
-                         'ORDER BY games_won.wins DESC;')
-    c.execute(current_standings_sql)
-    standings = (player for player in c.fetchall())
-
-    db.commit()
-    db.close()
-
+              
+    standings = (player for player in playerStandings())
+    
     return make_matches(standings)
 
