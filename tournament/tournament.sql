@@ -18,7 +18,7 @@ CREATE TABLE players (
 	losses integer);
 
 CREATE TABLE matches (
-	p1_id integer,
-	p2_id integer,
-	winner_id integer);
+	match_id serial PRIMARY KEY,
+	winner_id integer REFERENCES players (id),
+	loser_id integer REFERENCES players (id));
 	
