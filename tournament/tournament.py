@@ -5,6 +5,9 @@
 import psycopg2
 
 
+DB_NAME = 'tournament'
+
+
 def connect(db_name):
     """Connect to the PostgreSQL database.  Returns a database connection."""
     return psycopg2.connect("dbname={0}".format(db_name))
@@ -14,7 +17,7 @@ def deleteMatches():
     """Remove all the match records from the database."""
     db = connect('tournament')
     c = db.cursor()
-    c.execute("DELETE FROM players;")
+    c.execute("DELETE FROM matches;")
     db.commit()
     db.close()
 
@@ -70,6 +73,36 @@ def playerStandings():
         wins: the number of matches the player has won
         matches: the number of matches the player has played
     """
+    db = connect('tournament')
+    c = db.cursor()
+    matches_won_sql = ('CREATE OR REPLACE VIEW games_won AS '
+                       'SELECT players.id, players.name, '
+                       'COUNT(matches.match_id) AS wins '
+                       'FROM players '
+                       'LEFT JOIN matches '
+                       'ON players.id = matches.winner_id '
+                       'GROUP BY players.id;')
+    matches_lost_sql = ('CREATE OR REPLACE VIEW games_lost AS '
+                        'SELECT players.id, players.name, '
+                        'COUNT(matches.match_id) AS losses '
+                        'FROM players '
+                        'LEFT JOIN matches '
+                        'ON players.id = matches.loser_id '
+                        'GROUP BY players.id;')
+    total_matches_sql = ('SELECT games_won.id, games_won.name, '
+                         'games_won.wins, (SELECT COALESCE(games_won.wins) + ' 
+                         'COALESCE(games_lost.losses) AS matches) '
+                         'FROM games_won JOIN games_lost '
+                         'ON games_won.id = games_lost.id '
+                         'ORDER BY games_won.wins DESC;')
+    c.execute(matches_won_sql)
+    c.execute(matches_lost_sql)
+    c.execute(total_matches_sql)
+    results = c.fetchall()
+    db.commit()
+    db.close()
+
+    return results
 
 
 def reportMatch(winner, loser):
@@ -79,7 +112,12 @@ def reportMatch(winner, loser):
       winner:  the id number of the player who won
       loser:  the id number of the player who lost
     """
- 
+    db = connect('tournament')
+    c = db.cursor()
+    c.execute("INSERT INTO matches (winner_id, loser_id) VALUES (%s, %s);", (winner, loser,))
+    db.commit()
+    db.close()
+
  
 def swissPairings():
     """Returns a list of pairs of players for the next round of a match.
@@ -96,5 +134,39 @@ def swissPairings():
         id2: the second player's unique id
         name2: the second player's name
     """
+    def make_matches(standings_iter, match_list=None):
+        """Given a list of player tuples ranked from most wins to least,
+        return a new list of player tuples of the form:
 
+        [(p_one id, p_one name, p_two id, p_two name), ...]
+
+        Each tuple represents a new match.
+        """
+        if match_list is None:
+            match_list = []    
+        for player in standings_iter:
+            # Store info for next two players in rankings
+            p_one, p_two = player, standings_iter.next()
+            match_list.append((p_one[0], p_one[1], p_two[0], p_two[1]))
+
+        return match_list
+            
+
+
+
+
+    db = connect('tournament')
+    c = db.cursor()
+    current_standings_sql = ('SELECT games_won.id, games_won.name, '
+                         'games_won.wins, games_lost.losses ' 
+                         'FROM games_won JOIN games_lost '
+                         'ON games_won.id = games_lost.id '
+                         'ORDER BY games_won.wins DESC;')
+    c.execute(current_standings_sql)
+    standings = (player for player in c.fetchall())
+
+    db.commit()
+    db.close()
+
+    return make_matches(standings)
 
