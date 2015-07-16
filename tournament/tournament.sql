@@ -20,6 +20,5 @@ CREATE TABLE matches (
 	winner_id integer REFERENCES players (id),
 	loser_id integer REFERENCES players (id),
 	draw_id_one integer REFERENCES players (id),
-	draw_id_two integer REFERENCES players (id),
-	);
+	draw_id_two integer REFERENCES players (id));
 	
