@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 #
 # Test cases for tournament.py
+from collections import Counter
 
 from tournament import *
+
 
 def testDeleteMatches():
     deleteMatches()
@@ -125,6 +127,70 @@ def testPairings():
     print "8. After one match, players with one win are paired."
 
 
+def testGetMatches():
+    deleteMatches()
+    deletePlayers()
+    registerPlayer("Mangle Thrush")
+    registerPlayer("Wrath Pumpkin")
+    standings = playerStandings()
+    [id1, id2] = [row[0] for row in standings]
+    reportMatch(id1, id2)
+    matches = getMatches()
+    if len(matches) != 1:
+        raise ValueError("There should be only one match played.")
+    print "9. A list of matches played can be retrieved."
+
+
+def testCleanPairingsTwoPlayers():
+    deleteMatches()
+    deletePlayers()
+    registerPlayer("Twilight Sparkle")
+    registerPlayer("Fluttershy")
+    standings = playerStandings()
+    [id1, id2] = [row[0] for row in standings]
+    reportMatch(id1, id2)
+    pairings_round_one = swissPairings(remove_dupes=True)
+    if pairings_round_one != []:
+        raise ValueError(
+            "With two players, there should be no more matches after the first round.")
+    print "10. In a 2-player tournament, there should only be 1 round of matches."
+
+def testCleanPairingsEightPlayers():
+    """
+    This doesn't consistently pass. Issue with duplication function.
+    """
+    deleteMatches()
+    deletePlayers()
+    registerPlayer("Twilight Sparkle")
+    registerPlayer("Fluttershy")
+    registerPlayer("Mangle Thrush")
+    registerPlayer("Wrath Pumpkin")
+    registerPlayer("Applejack")
+    registerPlayer("Pinkie Pie")
+    registerPlayer("Cathy Burton")
+    registerPlayer("Diane Grant")
+    standings = playerStandings()
+    [id1, id2, id3, id4, id5, id6, id7, id8] = [row[0] for row in standings]
+    reportMatch(id1, id2)
+    reportMatch(id3, id4)
+    reportMatch(id5, id6)
+    reportMatch(id7, id8)
+    pairings_round_one = swissPairings()
+    print(pairings_round_one)
+    reportMatch(id1, id3)
+    reportMatch(id5, id7)
+    reportMatch(id4, id2)
+    reportMatch(id8, id6)
+    pairings_round_two = swissPairings(remove_dupes=True)
+    print(pairings_round_two)
+    
+    for match in pairings_round_two:
+        if (match in pairings_round_one) or (match[2], match[3], match[0], match[1]) in pairings_round_one:
+            raise ValueError(
+                "With eight players, there should be no more matches after the third round.")
+    print "11. In an 8-player tournament, there should only be 3 round of matches."
+
+
 if __name__ == '__main__':
     testDeleteMatches()
     testDelete()
@@ -134,6 +200,8 @@ if __name__ == '__main__':
     testStandingsBeforeMatches()
     testReportMatches()
     testPairings()
+    testGetMatches()
+    testCleanPairingsTwoPlayers()
+    testCleanPairingsEightPlayers()
     print "Success!  All tests pass!"
-
 
