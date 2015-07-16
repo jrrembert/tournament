@@ -8,7 +8,7 @@ Make sure that you have [VirtualBox](https://www.virtualbox.org/wiki/Download_Ol
 ### From a terminal (OS X)
 
 ```
-vagrant up default --provider=virtualbox
+$ vagrant up default --provider=virtualbox
 ```
 
 **Note**: You may see an error similar to:
