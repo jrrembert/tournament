@@ -89,7 +89,8 @@ def playerStandings():
                         'LEFT JOIN matches '
                         'ON players.id = matches.loser_id '
                         'GROUP BY players.id;')
-    total_matches_sql = ('SELECT games_won.id, games_won.name, '
+    total_matches_sql = ('CREATE OR REPLACE VIEW total_matches AS '
+                         'SELECT games_won.id, games_won.name, '
                          'games_won.wins, (SELECT COALESCE(games_won.wins) + ' 
                          'COALESCE(games_lost.losses) AS matches) '
                          'FROM games_won JOIN games_lost '
@@ -98,6 +99,7 @@ def playerStandings():
     c.execute(matches_won_sql)
     c.execute(matches_lost_sql)
     c.execute(total_matches_sql)
+    c.execute('SELECT * FROM total_matches;')
     results = c.fetchall()
     db.commit()
     db.close()
