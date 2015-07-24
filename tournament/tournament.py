@@ -14,7 +14,7 @@ def connect(db_name):
 
 
 def deleteMatches():
-    """Remove all the match records from the database."""
+    """ Remove all the match records from the database. """
     db = connect('tournament')
     c = db.cursor()
     c.execute("DELETE FROM matches;")
@@ -23,16 +23,42 @@ def deleteMatches():
 
 
 def deletePlayers():
-    """Remove all the player records from the database."""
+    """ Remove all the player records from the database. """
     db = connect('tournament')
     c = db.cursor()
+    # We've defined a many-to-many relationship between tournament_roster
+    # and players so we must make sure no records exist in the child
+    # table before deleting players.
+    c.execute("DELETE FROM tournament_roster;")
     c.execute("DELETE FROM players;")
     db.commit()
     db.close()
 
 
+def deleteTournaments():
+    """ Remove all tournaments from the database. """
+    db = connect('tournament')
+    c = db.cursor()
+    # We've defined a many-to-many relationship between tournament_roster
+    # and tournaments so we must make sure no records exist in the child
+    # table before deleting tournaments.
+    c.execute("DELETE FROM tournament_roster;")
+    c.execute("DELETE FROM tournaments;")
+    db.commit()
+    db.close()
+
+
+def deleteTournament(tournament_id):
+    """ Remove a single tournament from the database. """
+    db = connect('tournament')
+    c = db.cursor()
+    c.execute("DELETE FROM tournaments where tournament_id = {0};".format(tournament_id))
+    db.commit()
+    db.close()
+
+
 def countPlayers():
-    """Returns the number of players currently registered."""
+    """ Returns the number of players currently registered. """
     db = connect('tournament')
     c = db.cursor()
     c.execute("SELECT COUNT(*) AS num FROM players;")
@@ -43,8 +69,32 @@ def countPlayers():
     return player_count
 
 
+def getTournaments():
+    """ Get all tournments registered in the database. """
+    db = connect('tournament')
+    c = db.cursor()
+    c.execute("SELECT * FROM tournaments;")
+    results = c.fetchall()
+    db.commit()
+    db.close()
+
+    return results
+
+
+def getTournamentRoster(tournament_id):
+    """ Get the players registered in a specific tournament. """
+    db = connect('tournament')
+    c = db.cursor()
+    c.execute("SELECT * FROM tournament_roster WHERE tournament_id={0}".format(tournament_id))
+    results = c.fetchall()
+    db.commit()
+    db.close()
+
+    return results
+
+
 def registerPlayer(name):
-    """Adds a player to the tournament database.
+    """ Adds a player to the tournament database.
   
     The database assigns a unique serial id number for the player.  (This
     should be handled by your SQL database schema, not in your Python code.)
@@ -59,9 +109,17 @@ def registerPlayer(name):
     db.close()
 
 
+def registerTournament():
+    """ Create a new tournament. """
+    db = connect('tournament')
+    c = db.cursor()
+    c.execute("INSERT INTO tournaments DEFAULT VALUES;")
+    db.commit()
+    db.close()
+
 
 def playerStandings():
-    """Returns a list of the players and their win records, sorted by wins.
+    """ Returns a list of the players and their win records, sorted by wins.
 
     The first entry in the list should be the player in first place, or a player
     tied for first place if there is currently a tie.
@@ -124,7 +182,7 @@ def playerStandings():
 
 
 def reportMatch(winner, loser, draw=False):
-    """Records the outcome of a single match between two players.
+    """ Records the outcome of a single match between two players.
 
     Args:
       winner:  the id number of the player who won
@@ -141,7 +199,7 @@ def reportMatch(winner, loser, draw=False):
 
  
 def swissPairings():
-    """Returns a list of pairs of players for the next round of a match.
+    """ Returns a list of pairs of players for the next round of a match.
   
     Assuming that there are an even number of players registered, each player
     appears exactly once in the pairings.  Each player is paired with another
@@ -156,7 +214,7 @@ def swissPairings():
         name2: the second player's name
     """
     def make_matches(standings_iter, match_list=None):
-        """Given a list of player tuples ranked from most wins to least,
+        """ Given a list of player tuples ranked from most wins to least,
         return a new list of player tuples of the form:
 
         [(p_one id, p_one name, p_two id, p_two name), ...]
@@ -176,3 +234,10 @@ def swissPairings():
     
     return make_matches(standings)
 
+def registerTournamentPlayer(tournament_id, player_id):
+    """ Register a player in a specific tournament. """
+    db = connect('tournament')
+    c = db.cursor()
+    c.execute("INSERT INTO tournament_roster (tournament_id, player_id) VALUES (%s, %s);", (tournament_id, player_id))
+    db.commit()
+    db.close()

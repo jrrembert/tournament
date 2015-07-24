@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 #
 # Test cases for tournament.py
-
 from tournament import *
+
 
 def testDeleteMatches():
     deleteMatches()
@@ -10,8 +10,10 @@ def testDeleteMatches():
 
 
 def testDelete():
+    deleteTournaments()
     deleteMatches()
     deletePlayers()
+    
     print "2. Player records can be deleted."
 
 
@@ -124,6 +126,7 @@ def testPairings():
             "After one match, players with one win should be paired.")
     print "8. After one match, players with one win are paired."
 
+
 def testMatchDraw():
     deleteMatches()
     deletePlayers()
@@ -143,6 +146,103 @@ def testMatchDraw():
     print "9. A match between players can end in a draw."
 
 
+def testDeleteTournaments():
+    deleteTournaments()
+    print "10. We can delete all tournaments in the database."
+
+
+def testDeleteTournament():
+    deleteTournaments()
+    registerTournament()
+    registerTournament()
+    tournaments = getTournaments()
+    [t_id1, t_id2] = [row[0] for row in tournaments]
+    deleteTournament(t_id1)
+    tournaments = getTournaments()
+    if len(tournaments) != 1:
+        raise ValueError(
+            "There should be only one tournament registered in the database.")
+    print "11. We can delete a single tournment from the database."
+
+
+def testGetTournaments():
+    deleteTournaments()
+    registerTournament()
+    registerTournament()
+    tournaments = getTournaments()
+    if len(tournaments) != 2:
+        raise ValueError(
+            "There should only be two tournaments registered in the database.")
+    print "12. We can get a list of tournaments in the database and players registered to each."
+
+
+def testRegisterTournament():
+    deleteTournaments()
+    registerTournament()
+    print "13. We can create a new tournament."
+
+
+def testRegisterTournamentPlayer():
+    deleteTournaments()
+    deleteMatches()
+    deletePlayers()
+    registerTournament()
+    registerPlayer("Twilight Sparkle")
+    registerPlayer("Fluttershy")
+    tournaments = getTournaments()
+    [t_id] = [row[0] for row in tournaments]
+    standings = playerStandings()
+    [id1, id2] = [row[0] for row in standings]
+    registerTournamentPlayer(t_id, id1)
+    registerTournamentPlayer(t_id, id2)
+    tournament_roster = getTournamentRoster(t_id)
+    for player in tournament_roster:
+        player_id = player[1]
+        if id1 == player_id or id2 == player_id:
+            continue
+        else: 
+            raise ValueError(
+                "Players are not registered in tournament {0}".format(t_id))
+    print "14. We can register players in a tournament."
+
+
+def testGetTournamentRoster():
+    deleteTournaments()
+    deleteMatches()
+    deletePlayers()
+    registerTournament()
+    registerTournament()
+    registerPlayer("Twilight Sparkle")
+    registerPlayer("Fluttershy")
+    registerPlayer("Applejack")
+    registerPlayer("Pinkie Pie")
+    tournaments = getTournaments()
+    [t_id1, t_id2] = [row[0] for row in tournaments]
+    standings = playerStandings()
+    [p_id1, p_id2, p_id3, p_id4] = [row[0] for row in standings]
+    registerTournamentPlayer(t_id1, p_id1)
+    registerTournamentPlayer(t_id1, p_id2)
+    registerTournamentPlayer(t_id2, p_id3)
+    registerTournamentPlayer(t_id2, p_id4)
+    tournament_roster = getTournamentRoster(t_id1)
+    for player in tournament_roster:
+        player_id = player[1]
+        if p_id1 == player_id or p_id2 == player_id:
+            continue
+        else: 
+            raise ValueError(
+                "Players {0} and {1} should be registered in tournament {2}".format(p_id1, p_id2, t_id1))
+    tournament_roster = getTournamentRoster(t_id2)
+    for player in tournament_roster:
+        player_id = player[1]
+        if p_id3 == player_id or p_id4 == player_id:
+            continue
+        else: 
+            raise ValueError(
+                "Players {0} and {1} should be registered in tournament {2}".format(p_id3, p_id4, t_id2))
+    print "15. We can see the players registered in a specific tournament."
+
+    
 if __name__ == '__main__':
     testDeleteMatches()
     testDelete()
@@ -153,6 +253,10 @@ if __name__ == '__main__':
     testReportMatches()
     testPairings()
     testMatchDraw()
+    testDeleteTournaments()
+    testDeleteTournament()
+    testGetTournaments()
+    testRegisterTournament()
+    testRegisterTournamentPlayer()
+    testGetTournamentRoster()
     print "Success!  All tests pass!"
-
-
