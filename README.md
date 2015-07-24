@@ -21,6 +21,7 @@ back the machine 'default'. Please use a provider that exists.
 If you see this, look for a folder in your current working dir that looks like this: ```.vagrant/machines/<machine_name>/VirtualBox```. Simple change ```VirtualBox``` to virtualbox (or whatever spelling you provided to --provider) and the issue should be fixed.
 
 ```
+### Create your db and populate it with some tables ###
 username   $ vagrant ssh 
 vagrant-vm $ createdb tournament
 vagrant-vm $ psql
