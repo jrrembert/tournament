@@ -1,7 +1,11 @@
 # tournament
-A simple app that sets up and manages matches between game players.
+A simple app and library that sets up and manages tournament matches between game players.
+
+At it's core, it's simply a library that uses psychopg to manage connections and make queries to a PostgreSQL database. 
 
 ### Setup
+
+I recommend using the attached Vagrant configuration to try out the demo and library, however you can use a local Postgres instance if you prefer. These instructions will assume you're using the VM and executing scripts from the VM's terminal (denoted where you see 'vagrant-vm' below).
 
 Make sure that you have [VirtualBox](https://www.virtualbox.org/wiki/Download_Old_Builds) installed. **Note**: this project will not work on VirtualBox v5. The link directs you to v4.3 which is what I used for this project.
 
@@ -32,5 +36,13 @@ vagrant   => \i /vagrant/tournament/tournament.sql
 ### Run tests
 
 ```
-$ python path/to/tournament_test.py
+vagrant-vm $ python path/to/tournament_test.py
+```
+
+### Run the demo
+
+I put together a quick script to demo how an app might be built using the tournament library.
+
+```
+vagrant-vm $ python path/to/demo.py
 ```
