@@ -5,7 +5,7 @@ At it's core, it's simply a library that uses psychopg to manage connections and
 
 ### Setup
 
-I recommend using the attached Vagrant configuration to try out the demo and library, however you can use a local Postgres instance if you prefer. These instructions will assume you're using the VM and executing scripts from the VM's terminal (denoted where you see 'vagrant-vm' below).
+I recommend using the attached Vagrant configuration to try out the demo and library, however you can use a local Postgres instance if you prefer. These instructions will assume you're using the VM and executing scripts from the VM's terminal (denoted where you see `vagrant-vm $` below).
 
 Make sure that you have [VirtualBox](https://www.virtualbox.org/wiki/Download_Old_Builds) installed. **Note**: this project will not work on VirtualBox v5. The link directs you to v4.3 which is what I used for this project.
 
