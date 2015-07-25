@@ -3,16 +3,14 @@
 Super ugly demo to demonstrate how a potential tournament might be set up.
 
 """
-import sys
 import math
-import time
 import random
+import sys
+import time
 
 from tournament import deleteMatches, deletePlayers, deleteTournaments
 from tournament import playerStandings, registerTournament, registerPlayer
 from tournament import swissPairings, reportMatch
-
-
 
 
 def calc_tournament_matches(player_num):
@@ -28,11 +26,11 @@ def calc_tournament_rounds(player_num):
 def calc_standings_header_spacing(standings):
     return len(max([player[1] for player in standings]))
 
+
 def main():
     print("\n################  Welcome to the Tournament Demo!  ################\n")
 
     # Start with a fresh db (order is important here)
-    
     deleteMatches()
     deletePlayers()
     deleteTournaments()
@@ -49,7 +47,6 @@ def main():
     print("\nSweet. We're going to create a tournament of {0} players with {1} round(s) and {2} match(es).\n".format(player_num, rounds, matches))
 
     registerTournament()
-
 
     # Register some players
 
@@ -84,7 +81,7 @@ def main():
                 names.append(name)
                 registerPlayer(names[num])
                 print(player_registered_text.format(num + 1, names[num]))
-    
+
     print("\nGreat! Now we're ready to start the tournament.")
 
     # Begin matches
@@ -101,21 +98,21 @@ def main():
             spaces = calc_standings_header_spacing(standings)
             print(standings_text_format.format("Names", "Wins", "Losses", "Draws"))
             for player in standings:
-                
                 print(standings_text_format.format(player[1], player[2], player[3], player[4]))
 
             round_matches = swissPairings()
             print("\nRound {0} will feature the following matches: ".format(r))
             for match in round_matches:
                 print("{0} vs. {1}".format(match[1], match[-1]))
-            
+
             proceed = raw_input("\nProceed? (press Enter to continue) \n")
-            
+
             # Start matches, reporting the outcome of each match and write
             # to db.
 
             if proceed == "":
                 for match in round_matches:
+                    print(match)
                     print("{0} vs. {1}......FIGHT!".format(match[1], match[-1]))
                     time.sleep(.1)
                     # Faking outcome weights, don't want draws to occur too often
@@ -136,7 +133,7 @@ def main():
         # After the last round, report the winner and the final standings
         standings = playerStandings()
         spaces = calc_standings_header_spacing(standings)
-        
+
         print("\nAnd the tournament winner is...{0}!\n".format(standings[0][1]))
         print("################  FINAL STANDINGS  ################\n")
         print(standings_text_format.format("Names", "Wins", "Losses", "Draws"))
