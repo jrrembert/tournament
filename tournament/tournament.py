@@ -52,7 +52,7 @@ def deleteTournament(tournament_id):
     """ Remove a single tournament from the database. """
     db = connect('tournament')
     c = db.cursor()
-    c.execute("DELETE FROM tournaments where tournament_id = {0};".format(tournament_id))
+    c.execute("DELETE FROM tournaments where tournament_id = {%s};", (tournament_id,))
     db.commit()
     db.close()
 
@@ -85,7 +85,7 @@ def getTournamentRoster(tournament_id):
     """ Get the players registered in a specific tournament. """
     db = connect('tournament')
     c = db.cursor()
-    c.execute("SELECT * FROM tournament_roster WHERE tournament_id={0}".format(tournament_id))
+    c.execute("SELECT * FROM tournament_roster WHERE tournament_id={%s};", (tournament_id,))
     results = c.fetchall()
     db.commit()
     db.close()
