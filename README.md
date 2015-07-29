@@ -31,6 +31,7 @@ vagrant-vm $ createdb tournament
 vagrant-vm $ psql
 vagrant   => \c tournament
 vagrant   => \i /vagrant/tournament/tournament.sql
+vagrant   => \q
 ```
 
 ### Run tests
