@@ -10,7 +10,7 @@ import time
 
 from tournament import deleteMatches, deletePlayers, deleteTournaments
 from tournament import playerStandings, registerTournament, registerPlayer
-from tournament import swissPairings, reportMatch
+from tournament import swissPairings, reportMatch, connect, DB_NAME
 
 
 def calc_tournament_matches(player_num):
@@ -31,10 +31,11 @@ def main():
     print("\n################  Welcome to the Tournament Demo!  ################\n")
 
     # Start with a fresh db (order is important here)
-    deleteMatches()
-    deletePlayers()
-    deleteTournaments()
-
+    db = connect(DB_NAME)
+    deleteMatches(db)
+    deletePlayers(db)
+    deleteTournaments(db)
+    
     # Get your tournament set up.
 
     player_num = None
@@ -46,7 +47,7 @@ def main():
 
     print("\nSweet. We're going to create a tournament of {0} players with {1} round(s) and {2} match(es).\n".format(player_num, rounds, matches))
 
-    registerTournament()
+    registerTournament(db)
 
     # Register some players
 
@@ -64,14 +65,14 @@ def main():
     if choice == "1" or choice == "":
         for num in range(0, int(player_num)):
             names.append("Player {0}".format(num + 1))
-            registerPlayer(names[num])
+            registerPlayer(db, names[num])
             print(player_registered_text.format(num + 1, names[num]))
     else:
         for num in range(0, int(player_num)):
             name = raw_input("Name for Player {0}: ".format(num + 1))
             if name == "":
                 names.append("Player {0}".format(num + 1))
-                registerPlayer(names[num])
+                registerPlayer(db, names[num])
                 print(player_registered_text.format(num + 1, names[num]))
             else:
                 while len(name) > 30:
@@ -79,7 +80,7 @@ def main():
                     name = raw_input("Please enter a name with fewer than 30 characters: ")
                     print(len(name))
                 names.append(name)
-                registerPlayer(names[num])
+                registerPlayer(db, names[num])
                 print(player_registered_text.format(num + 1, names[num]))
 
     print("\nGreat! Now we're ready to start the tournament.")
@@ -94,13 +95,13 @@ def main():
 
         for r in range(1, int(rounds) + 1):
             print("\n################  CURRENT STANDINGS  ################\n")
-            standings = playerStandings()
+            standings = playerStandings(db)
             spaces = calc_standings_header_spacing(standings)
             print(standings_text_format.format("Names", "Wins", "Losses", "Draws"))
             for player in standings:
                 print(standings_text_format.format(player[1], player[2], player[3], player[4]))
 
-            round_matches = swissPairings()
+            round_matches = swissPairings(db)
             print("\nRound {0} will feature the following matches: ".format(r))
             for match in round_matches:
                 print("{0} vs. {1}".format(match[1], match[-1]))
@@ -118,20 +119,20 @@ def main():
                     # Faking outcome weights, don't want draws to occur too often
                     result = random.choice([match[0], match[0], match[-2], match[-2], "draw"])
                     if result is match[0]:
-                        reportMatch(match[0], match[-2])
+                        reportMatch(db, match[0], match[-2])
                         print("{0} wins!".format(match[1]))
                     elif result is match[-2]:
-                        reportMatch(match[-2], match[0])
+                        reportMatch(db, match[-2], match[0])
                         print("{0} wins!".format(match[-1]))
                     elif result is "draw":
-                        reportMatch(match[-2], match[0], draw=True)
+                        reportMatch(db, match[-2], match[0], draw=True)
                         print("Draw!")
             else:
                 sys.exit(-1)
     finally:
 
         # After the last round, report the winner and the final standings
-        standings = playerStandings()
+        standings = playerStandings(db)
         spaces = calc_standings_header_spacing(standings)
 
         print("\nAnd the tournament winner is...{0}!\n".format(standings[0][1]))
