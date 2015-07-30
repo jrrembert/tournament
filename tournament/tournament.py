@@ -9,91 +9,96 @@ DB_NAME = 'tournament'
 
 
 def connect(db_name):
-    """Connect to the PostgreSQL database.  Returns a database connection."""
+    """ Connect to a PostgreSQL database.  Returns a database connection."""
     return psycopg2.connect("dbname={0}".format(db_name))
 
 
-def deleteMatches():
+def transaction_decorator(sql_function, commit=True):
+    """ Decorator for handling cursor management on transaction calls. """
+    def decorated_function(db, *args, **kwargs):
+        # Should already have db connection by now, but this was the only
+        # way I could figure out how to reuse reinstantiate conn between 
+        # function calls.
+        db = connect(DB_NAME)
+        c = db.cursor()
+        try:
+            retval = sql_function(c, *args, **kwargs)
+            
+            db.commit()
+        except:
+            db.rollback()
+            raise
+        finally:
+            db.close()
+
+        return retval
+
+    decorated_function.__name__ = sql_function.__name__
+    decorated_function.__doc__ = sql_function.__doc__
+
+    return decorated_function
+
+
+@transaction_decorator
+def deleteMatches(c):
     """ Remove all the match records from the database. """
-    db = connect('tournament')
-    c = db.cursor()
     c.execute("DELETE FROM matches;")
-    db.commit()
-    db.close()
+    
 
-
-def deletePlayers():
+@transaction_decorator
+def deletePlayers(c):
     """ Remove all the player records from the database. """
-    db = connect('tournament')
-    c = db.cursor()
     # We've defined a many-to-many relationship between tournament_roster
     # and players so we must make sure no records exist in the child
     # table before deleting players.
     c.execute("DELETE FROM tournament_roster;")
     c.execute("DELETE FROM players;")
-    db.commit()
-    db.close()
+    
 
-
-def deleteTournaments():
+@transaction_decorator
+def deleteTournaments(c):
     """ Remove all tournaments from the database. """
-    db = connect('tournament')
-    c = db.cursor()
     # We've defined a many-to-many relationship between tournament_roster
     # and tournaments so we must make sure no records exist in the child
     # table before deleting tournaments.
     c.execute("DELETE FROM tournament_roster;")
     c.execute("DELETE FROM tournaments;")
-    db.commit()
-    db.close()
+    
 
-
-def deleteTournament(tournament_id):
+@transaction_decorator
+def deleteTournament(c, tournament_id):
     """ Remove a single tournament from the database. """
-    db = connect('tournament')
-    c = db.cursor()
-    c.execute("DELETE FROM tournaments where tournament_id = {0};".format(tournament_id))
-    db.commit()
-    db.close()
+    c.execute("DELETE FROM tournaments where tournament_id = (%s);", (tournament_id,))
+    
 
-
-def countPlayers():
+@transaction_decorator
+def countPlayers(c):
     """ Returns the number of players currently registered. """
-    db = connect('tournament')
-    c = db.cursor()
     c.execute("SELECT COUNT(*) AS num FROM players;")
     player_count = int(c.fetchone()[0])
-    db.commit()
-    db.close()
-
+    
     return player_count
 
 
-def getTournaments():
+@transaction_decorator
+def getTournaments(c):
     """ Get all tournments registered in the database. """
-    db = connect('tournament')
-    c = db.cursor()
     c.execute("SELECT * FROM tournaments;")
     results = c.fetchall()
-    db.commit()
-    db.close()
-
+    
     return results
 
-
-def getTournamentRoster(tournament_id):
+@transaction_decorator
+def getTournamentRoster(c, tournament_id):
     """ Get the players registered in a specific tournament. """
-    db = connect('tournament')
-    c = db.cursor()
-    c.execute("SELECT * FROM tournament_roster WHERE tournament_id={0}".format(tournament_id))
+    c.execute("SELECT * FROM tournament_roster WHERE tournament_id=(%s);", (tournament_id,))
     results = c.fetchall()
-    db.commit()
-    db.close()
-
+    
     return results
 
 
-def registerPlayer(name):
+@transaction_decorator
+def registerPlayer(c, name):
     """ Adds a player to the tournament database.
   
     The database assigns a unique serial id number for the player.  (This
@@ -102,23 +107,17 @@ def registerPlayer(name):
     Args:
       name: the player's full name (need not be unique).
     """
-    db = connect('tournament')
-    c = db.cursor()
     c.execute("INSERT INTO players (name) VALUES (%s);", (name,))
-    db.commit()
-    db.close()
+    
 
-
-def registerTournament():
+@transaction_decorator
+def registerTournament(c):
     """ Create a new tournament. """
-    db = connect('tournament')
-    c = db.cursor()
     c.execute("INSERT INTO tournaments DEFAULT VALUES;")
-    db.commit()
-    db.close()
+    
 
-
-def playerStandings():
+@transaction_decorator
+def playerStandings(c):
     """ Returns a list of the players and their win records, sorted by wins.
 
     The first entry in the list should be the player in first place, or a player
@@ -131,74 +130,27 @@ def playerStandings():
         wins: the number of matches the player has won
         matches: the number of matches the player has played
     """
-    db = connect('tournament')
-    c = db.cursor()
-    matches_won_sql = ('CREATE OR REPLACE VIEW games_won AS '
-                       'SELECT players.id, players.name, '
-                       'COUNT(matches.match_id) AS wins '
-                       'FROM players '
-                       'LEFT JOIN matches '
-                       'ON players.id = matches.winner_id '
-                       'GROUP BY players.id;')
-    matches_lost_sql = ('CREATE OR REPLACE VIEW games_lost AS '
-                        'SELECT players.id, players.name, '
-                        'COUNT(matches.match_id) AS losses '
-                        'FROM players '
-                        'LEFT JOIN matches '
-                        'ON players.id = matches.loser_id '
-                        'GROUP BY players.id;')
-    matches_draw_sql = ('CREATE OR REPLACE VIEW games_draw AS '
-                        'SELECT players.id, players.name, '
-                        'COUNT(matches.match_id) AS draws '
-                        'FROM players '
-                        'LEFT JOIN matches '
-                        'ON players.id = matches.draw_id_one '
-                        'OR players.id = matches.draw_id_two '
-                        'GROUP BY players.id;')
-    total_matches_sql = ('CREATE OR REPLACE VIEW total_matches AS '
-                         'SELECT games_won.id, games_won.name, '
-                         'games_won.wins, games_lost.losses, '
-                         'games_draw.draws, '
-                         '(SELECT COALESCE(games_won.wins) + ' 
-                         'COALESCE(games_lost.losses) + '
-                         'COALESCE(games_draw.draws) AS matches) '
-                         'FROM games_won '
-                         'JOIN games_draw '
-                         'ON games_draw.id = games_won.id '
-                         'JOIN games_lost '
-                         'ON games_lost.id = games_draw.id '
-                         'ORDER BY games_won.wins DESC, '
-                         'games_draw.draws DESC;')
-    c.execute(matches_won_sql)
-    c.execute(matches_lost_sql)
-    c.execute(matches_draw_sql)
-    c.execute(total_matches_sql)
     c.execute('SELECT * FROM total_matches;')
     results = c.fetchall()
-    db.commit()
-    db.close()
-
+    
     return results
 
 
-def reportMatch(winner, loser, draw=False):
+@transaction_decorator
+def reportMatch(c, winner, loser, draw=False):
     """ Records the outcome of a single match between two players.
 
     Args:
       winner:  the id number of the player who won
       loser:  the id number of the player who lost
     """
-    db = connect('tournament')
-    c = db.cursor()
     if draw:
         c.execute("INSERT INTO matches (draw_id_one, draw_id_two) VALUES (%s, %s);", (winner, loser,))
     else:
-        c.execute("INSERT INTO matches (winner_id, loser_id) VALUES (%s, %s);", (winner, loser,))
-    db.commit()
-    db.close()
+        c.execute("INSERT INTO matches (winner_id, loser_id) VALUES (%s, %s);", (winner, loser,)) 
 
  
-def swissPairings():
+def swissPairings(db):
     """ Returns a list of pairs of players for the next round of a match.
   
     Assuming that there are an even number of players registered, each player
@@ -230,14 +182,12 @@ def swissPairings():
 
         return match_list
               
-    standings = (player for player in playerStandings())
+    standings = (player for player in playerStandings(db))
     
     return make_matches(standings)
 
-def registerTournamentPlayer(tournament_id, player_id):
+
+@transaction_decorator
+def registerTournamentPlayer(c, tournament_id, player_id):
     """ Register a player in a specific tournament. """
-    db = connect('tournament')
-    c = db.cursor()
     c.execute("INSERT INTO tournament_roster (tournament_id, player_id) VALUES (%s, %s);", (tournament_id, player_id))
-    db.commit()
-    db.close()
