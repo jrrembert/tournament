@@ -7,6 +7,8 @@
 -- these lines here.
 
 -- Create database
+\c vagrant
+DROP DATABASE IF EXISTS tournament;
 CREATE DATABASE tournament;
 \c tournament
 
