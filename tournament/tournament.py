@@ -17,13 +17,11 @@ def transaction_decorator(sql_function, commit=True):
     """ Decorator for handling cursor management on transaction calls. """
     def decorated_function(db, *args, **kwargs):
         # Should already have db connection by now, but this was the only
-        # way I could figure out how to reuse reinstantiate conn between 
-        # function calls.
+        # way I could figure out how to reuse conn between function calls.
         db = connect(DB_NAME)
         c = db.cursor()
         try:
             retval = sql_function(c, *args, **kwargs)
-            
             db.commit()
         except:
             db.rollback()
